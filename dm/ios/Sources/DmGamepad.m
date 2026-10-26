@@ -75,11 +75,14 @@ static void motion_start(void) {
 // A controller mounted on the phone (Backbone One, Razer Kishi, GameSir G8) has no motion sensors of its own: the phone in the middle is the console, as a Switch in handheld.
 // So the phone's device motion (gyro + accelerometer, CoreMotion's fused gravity and user acceleration, 100 Hz, no permission prompt) drives player 1's six-axis sensor, turned
 // into the Switch frame for the screen's orientation (motion_phone_to_switch, motion_fusion.h): x to the right of the picture, y to its top, z toward the player.
-// DM_PHONE_MOTION: auto (default) while no connected controller has a gyro of its own (a DualSense held apart from the phone uses its own, motion_apple.h), 1 always, 0 never
+// DM_PHONE_MOTION: auto (default) while no connected controller has a gyro of its own (a DualSense held apart from the phone uses its own, motion_apple.h), 1 always, 0 never.
+// DM_MOTION=0 (all motion off; the NSP script's --no-motion builds it in) never starts device motion, so such a build runs no motion code at all
 static _Atomic int g_iface_orient = 3;      // UIInterfaceOrientation, updated on layout
 static _Atomic int g_pad_has_motion;        // a connected controller sends motion itself
 static void phone_motion_start(void) {
-    const char *e = getenv("DM_PHONE_MOTION"); int mode = !e || !strcmp(e, "auto") ? -1 : atoi(e);
+    const char *e = getenv("DM_MOTION");
+    if (e && !atoi(e)) { LOG("front end: motion is off (DM_MOTION=0), the phone's gyro is not used"); return; }
+    e = getenv("DM_PHONE_MOTION"); int mode = !e || !strcmp(e, "auto") ? -1 : atoi(e);
     if (!mode) { LOG("front end: the phone's gyro is off (DM_PHONE_MOTION=0)"); return; }
     if (!g_motion.deviceMotionAvailable) { LOG("front end: no device motion, the phone's gyro is not used"); return; }
     LOG("front end: the phone's gyro drives the controller's six-axis sensor %s", mode < 0 ? "while no controller has a gyro of its own" : "always (DM_PHONE_MOTION=1)");
